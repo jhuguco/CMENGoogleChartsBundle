@@ -37,7 +37,15 @@ class OptionsOutput extends AbstractOptionsOutput
         $options = $this->renameRecursivelyKeys($options);
 
         $js = "var $optionsName = {";
+        $js .= $this->drawRecursively($options);
+        $js .= "};\n";
 
+        return $js;
+    }
+
+    public function drawRecursively($options)
+    {
+        $js = "";
         end($options);
         $lastKey = key($options);
         foreach ($options as $optionKey => $optionValue) {
@@ -47,16 +55,21 @@ class OptionsOutput extends AbstractOptionsOutput
                 $js .= $this->dateOutput->draw(new \DateTime($optionValue['date']));
             } elseif (in_array($optionKey, ['series', 'vAxes'])) {
                 $js .= json_encode($optionValue, JSON_FORCE_OBJECT);
+            } elseif (is_array($optionValue) && $this->isAssocArray($optionValue)) {
+                $js .= "{" . $this->drawRecursively($optionValue) . "}";
             } else {
                 $js .= json_encode($optionValue);
             }
-
             if ($optionKey != $lastKey) {
                 $js .= ', ';
             }
         }
-        $js .= "};\n";
-
         return $js;
+    }
+
+    private function isAssocArray(array $arr)
+    {
+        if (array() === $arr) return false;
+        return array_keys($arr) !== range(0, count($arr) - 1);
     }
 }
